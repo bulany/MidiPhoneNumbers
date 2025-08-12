@@ -1,30 +1,103 @@
 <script setup lang="ts">
-import HelloWorld from './components/HelloWorld.vue'
+import { ref, onMounted } from 'vue'
+import * as Tone from 'tone'
+
+const phoneNumber = ref('06 01 02 03 04')
+const midiNotes = ref<number[]>([])
+
+let synth: Tone.Synth
+
+onMounted(async () => {
+  synth = new Tone.Synth().toDestination()
+})
+
+const playPhoneNumber = async () => {
+  // Start audio context if needed
+  if (Tone.context.state !== 'running') {
+    await Tone.start()
+  }
+  
+  console.log('Playing phone number:', phoneNumber.value)
+  // Extract the last 4 pairs of digits
+  const parts = phoneNumber.value.replace(/\s/g, '').match(/.{2}/g) || []
+  const lastFour = parts.slice(-4)
+  midiNotes.value = lastFour.map(part => parseInt(part, 10))
+  console.log('MIDI notes:', midiNotes.value)
+  
+  // Play the notes in sequence
+  const now = Tone.now()
+  midiNotes.value.forEach((note, index) => {
+    const frequency = Tone.Frequency(note, 'midi')
+    synth.triggerAttackRelease(frequency, '8n', now + index * 0.5)
+  })
+}
 </script>
 
 <template>
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="/vite.svg" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://vuejs.org/" target="_blank">
-      <img src="./assets/vue.svg" class="logo vue" alt="Vue logo" />
-    </a>
+  <div id="app">
+    <div class="header">
+      <h1>French Phone Number MIDI Visualizer</h1>
+      <div class="input-section">
+        <input 
+          v-model="phoneNumber" 
+          type="text" 
+          placeholder="06 01 02 03 04"
+          class="phone-input"
+        />
+        <button @click="playPhoneNumber" class="play-button">
+          Translate to MIDI
+        </button>
+      </div>
+    </div>
+    
+    <div class="visualizer">
+      <p>Piano roll will go here</p>
+      <p>Phone: {{ phoneNumber }}</p>
+      <p>Notes: {{ midiNotes }}</p>
+    </div>
   </div>
-  <HelloWorld msg="Vite + Vue" />
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+<style>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 20px;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+
+.header {
+  margin-bottom: 40px;
 }
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+
+.input-section {
+  margin: 20px 0;
+}
+
+.phone-input {
+  font-size: 24px;
+  padding: 10px;
+  width: 300px;
+  margin-right: 10px;
+  border: 2px solid #3498db;
+  border-radius: 5px;
+}
+
+.play-button {
+  font-size: 18px;
+  padding: 12px 20px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.play-button:hover {
+  background-color: #2980b9;
+}
+
+.visualizer {
+  margin-top: 20px;
 }
 </style>
