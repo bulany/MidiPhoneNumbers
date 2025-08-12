@@ -4,6 +4,7 @@ import * as Tone from 'tone'
 
 const phoneNumber = ref('06 01 02 03 04')
 const midiNotes = ref<number[]>([])
+const namesNotes = ref<string[]>([])
 
 let synth: Tone.Synth
 
@@ -13,7 +14,7 @@ onMounted(async () => {
 
 const playPhoneNumber = async () => {
   // Start audio context if needed
-  if (Tone.context.state !== 'running') {
+  if (Tone.getContext().state !== 'running') {
     await Tone.start()
   }
   
@@ -23,11 +24,12 @@ const playPhoneNumber = async () => {
   const lastFour = parts.slice(-4)
   midiNotes.value = lastFour.map(part => parseInt(part, 10))
   console.log('MIDI notes:', midiNotes.value)
+  namesNotes.value = midiNotes.value.map(midiNum => Tone.Frequency(midiNum, 'midi').toNote())
   
   // Play the notes in sequence
   const now = Tone.now()
   midiNotes.value.forEach((note, index) => {
-    const frequency = Tone.Frequency(note, 'midi')
+    const frequency = Tone.Frequency(note, 'midi').toFrequency()
     synth.triggerAttackRelease(frequency, '8n', now + index * 0.5)
   })
 }
@@ -54,6 +56,7 @@ const playPhoneNumber = async () => {
       <p>Piano roll will go here</p>
       <p>Phone: {{ phoneNumber }}</p>
       <p>Notes: {{ midiNotes }}</p>
+      <p>Names: {{ namesNotes }}</p>
     </div>
   </div>
 </template>
